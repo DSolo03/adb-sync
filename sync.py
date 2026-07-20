@@ -1,16 +1,15 @@
-import yaml
-import adbutils
-from dataclasses import dataclass
-from enum import StrEnum
-from typing import Optional
-from pathlib import Path, PurePosixPath
-from collections.abc import Iterator
 import hashlib
 import logging
-import warnings
 import shutil
+from collections.abc import Iterator
+from dataclasses import dataclass
+from enum import StrEnum
+from pathlib import Path, PurePosixPath
+from typing import Optional
 
-warnings.filterwarnings("ignore", category = DeprecationWarning) 
+import adbutils
+import yaml
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -112,6 +111,9 @@ client = Client()
 config = Config(client)
 
 def push(sync: Sync, client: Client, start: Optional[Path] = None):
+    '''
+    Pushing new files and directories in to Android.
+    '''
     folder = start or sync.local
     for object in folder.iterdir():
         if object.is_dir():
@@ -123,6 +125,9 @@ def push(sync: Sync, client: Client, start: Optional[Path] = None):
                 client.push(sync.remote/relative, object)
 
 def pull(sync: Sync, client: Client, start: Optional[PurePosixPath] = None):
+    '''
+    Pulling new files and directories from Android.
+    '''
     folder = start or sync.remote
     for object in client.list(folder):
         if client.verify_path(object):
@@ -134,6 +139,9 @@ def pull(sync: Sync, client: Client, start: Optional[PurePosixPath] = None):
                 client.pull(object, sync.local/relative)
 
 def sync_remote(sync: Sync, client: Client, start: Optional[PurePosixPath] = None):
+    '''
+    Removing deleted files and directories in local on Android.
+    '''
     folder = start or sync.remote
     for object in client.list(folder):
         relative = object.relative_to(sync.remote)
@@ -149,6 +157,9 @@ def sync_remote(sync: Sync, client: Client, start: Optional[PurePosixPath] = Non
                 logging.info(f"Removing file {object}")
 
 def sync_local(sync: Sync, client: Client, start: Optional[Path] = None):
+    '''
+    Removing deleted files and directories in Android on local.
+    '''
     folder = start or sync.local
     for object in folder.iterdir():
         relative = object.relative_to(sync.local)
