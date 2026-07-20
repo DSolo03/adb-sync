@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import shutil
+import shlex
 from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import StrEnum
@@ -49,7 +50,11 @@ class Client:
                 raise ConnectionError(result)
 
     def _md5_file(self, remote_path: PurePosixPath) -> str:
-        return self.device.shell(f"md5sum '{remote_path}'").strip().split(" ")[0]
+        quoted_path = shlex.quote(str(remote_path))
+        result = self.device.shell(f"md5sum {quoted_path}").strip()
+        if "No such file" in result or not result:
+            return ""
+        return result.split()[0]
 
     def compare_files(self, remote_path: PurePosixPath, local_path: Path) -> bool:
         return self._md5_file(remote_path) == get_file_md5(local_path)
@@ -62,25 +67,30 @@ class Client:
         self.device.sync.pull(str(remote_path), str(local_path), exist_ok = True)
 
     def remove_file(self, remote_path: PurePosixPath):
-        self.device.shell(f"rm '{remote_path}'")
+        self.device.shell(f"rm {shlex.quote(str(remote_path))}")
 
     def remove_folder(self, remote_path: PurePosixPath):
-        self.device.shell(f"rm -r '{remote_path}'")
+        self.device.shell(f"rm -r {shlex.quote(str(remote_path))}")
 
     def verify_path(self, remote_path: PurePosixPath) -> bool:
-        result = self.device.shell(f'[ -d "{remote_path}" ] &&  echo "True" || echo "False"')
+        path = shlex.quote(str(remote_path))
+        result = self.device.shell(f'[ -d {path} ] && echo "True" || echo "False"')
         return self._raw_bool(result)
     
     def verify_file(self, remote_path: PurePosixPath) -> bool:
-        result = self.device.shell(f'[ -f "{remote_path}" ] &&  echo "True" || echo "False"')
+        path = shlex.quote(str(remote_path))
+        result = self.device.shell(f'[ -f {path} ] && echo "True" || echo "False"')
         return self._raw_bool(result)
             
     def list(self, remote_path: PurePosixPath) -> Iterator[PurePosixPath]:
-        result = self.device.shell(f'find "{remote_path}" -maxdepth 1').split("\n")
-        for path in result:
-            path_obj = PurePosixPath(path)
-            if path_obj != remote_path and path.strip():
-                yield path_obj
+        path = shlex.quote(str(remote_path))
+        result = self.device.shell(f'find {path} -maxdepth 1').split("\n")
+        for pth in result:
+            pth_str = pth.strip()
+            if pth_str:
+                path_obj = PurePosixPath(pth_str)
+                if path_obj != remote_path:
+                    yield path_obj
 
 @dataclass
 class Sync:
