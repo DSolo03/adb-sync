@@ -1,0 +1,4 @@
+syncs:
+  - remote: "<android_side_folder_path>"
+    local: "<local_side_folder_path>"
+    direction: "pull" # [pull | push]
