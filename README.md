@@ -17,5 +17,5 @@ pip install -r requirements.txt
 3. Create copy of `config.example.yaml` file, rename it to `config.yaml` and fill in your syncs.
 4. Run the script and enjoy!
 ```bash
-py sync.py
+py sync.py [config_file]
 ```

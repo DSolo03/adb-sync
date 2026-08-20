@@ -7,10 +7,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
 from typing import Optional
+import argparse
 
 import adbutils
 import yaml
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -117,8 +117,12 @@ class Config:
             direction = Direction(direction_str)
             self.syncs.append(Sync(remote, local, direction))
 
+parser = argparse.ArgumentParser(description = "ADB Sync tool")
+parser.add_argument('config_file', type = Path, default = Path("config.yaml"), help = "path to sync configuration file")
+args = parser.parse_args()
+
 client = Client()
-config = Config(client)
+config = Config(client, args.config_file)
 
 def push(sync: Sync, client: Client, start: Optional[Path] = None):
     '''
